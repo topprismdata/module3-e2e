@@ -134,3 +134,31 @@ def test_g6_池确认进审批链端到端(env):
     act = plans.transition(pv.ref, "activate", actor="ops")
     assert act.payload == payload  # 确认字节到激活零漂移
     assert plans.verify_audit_chain()
+
+
+def test_g7_whatif分叉对比不污染激活版(env):
+    """WP24 #20：分叉=同批次新迭代；对比报告逐字节稳定；ACTIVE 零触碰。"""
+    import copy
+
+    from visitmodel.scenarios import compare_iterations, render_report
+
+    plans = env["plans"]
+    pv = plans.new_iteration("WI", VISIT_PLAN, actor="planner")
+    plans.transition(pv.ref, "simulate", actor="analyst")
+    plans.transition(pv.ref, "submit", actor="planner")
+    plans.transition(pv.ref, "approve", actor="manager")
+    act = plans.transition(pv.ref, "activate", actor="ops")
+
+    alt = copy.deepcopy(VISIT_PLAN)
+    alt["spec"]["weekday_slots"].append(["C009", 2])  # 分叉：+1 店
+    p2 = plans.new_iteration("WI", alt, actor="planner")
+    assert plans.active("WI").ref == act.ref  # 分叉不碰 ACTIVE
+
+    report = compare_iterations({act.ref: act.payload, p2.ref: p2.payload})
+    assert report["base_ref"] == act.ref
+    assert report["deltas"][p2.ref]["pool_size"] == 1
+    # 字节稳定 + 输入序无关
+    assert render_report(report) == render_report(
+        compare_iterations({p2.ref: p2.payload, act.ref: act.payload}))
+    # 对比后 ACTIVE 载荷仍零漂移
+    assert plans.get(act.ref).payload == VISIT_PLAN

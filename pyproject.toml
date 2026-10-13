@@ -1,11 +1,11 @@
 [project]
 name = "module3-e2e"
-version = "0.1.1"
+version = "0.1.2"
 description = "模块③ 线路计划集成 E2E：三层 × ②治理链 × ①工作台 七仓 tag 锁定（WP22 起步，WP25 扩全矩阵）"
 requires-python = ">=3.10"
 dependencies = [
     "visit-ir @ git+https://github.com/topprismdata/visit-ir.git@v0.2.0",
-    "visitmodel @ git+https://github.com/topprismdata/visitmodel.git@v0.2.0",
+    "visitmodel @ git+https://github.com/topprismdata/visitmodel.git@v0.3.0",
     "opticore @ git+https://github.com/topprismdata/opticore.git@v0.4.0",
     "plan-release @ git+https://github.com/topprismdata/plan-release.git@v0.3.0",
     "service-rules @ git+https://github.com/topprismdata/service-rules.git@v0.2.1",
