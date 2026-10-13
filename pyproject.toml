@@ -1,6 +1,6 @@
 [project]
 name = "module3-e2e"
-version = "0.1.2"
+version = "0.1.3"
 description = "模块③ 线路计划集成 E2E：三层 × ②治理链 × ①工作台 七仓 tag 锁定（WP22 起步，WP25 扩全矩阵）"
 requires-python = ">=3.10"
 dependencies = [

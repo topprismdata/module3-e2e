@@ -162,3 +162,51 @@ def test_g7_whatif分叉对比不污染激活版(env):
         compare_iterations({p2.ref: p2.payload, act.ref: act.payload}))
     # 对比后 ACTIVE 载荷仍零漂移
     assert plans.get(act.ref).payload == VISIT_PLAN
+
+
+def test_g8_三层链验解违例进工作台(env):
+    """WP25：L1 spec→L2 编译/独立验解→桥→①工作台——全链 hermetic。"""
+    from datetime import date as Dt
+
+    from visit_semantic_api import (
+        ContractType,
+        PlanningHorizon,
+        SemanticObjectivePolicy,
+        SourceMetadata,
+        VisitContract,
+        VisitSemanticSpec,
+        WorkloadCorridorPolicy,
+    )
+    from visitmodel import MathCompiler, MathValidator
+
+    horizon = PlanningHorizon(
+        start_date=Dt(2026, 3, 2), end_date=Dt(2026, 3, 6),
+        timezone="Asia/Shanghai", calendar_id="cn", anchor_week=10, phase_period=2,
+    )
+    spec = VisitSemanticSpec(
+        horizon=horizon,
+        contracts=(
+            VisitContract("W1", ContractType.WEEKLY, None, 0, (0, 1), 2,
+                          (Dt(2026, 3, 2), Dt(2026, 3, 3))),
+        ),
+        corridor=WorkloadCorridorPolicy(k_min=1, k_max=3, source="s",
+                                        derivation="manual", approved=True),
+        core_protections=(),
+        objective_policy=SemanticObjectivePolicy(),
+        metadata=SourceMetadata(schema_version="1.0", content_hash="h",
+                                source_snapshot_id="s", compiler_version="v",
+                                compiled_at="t"),
+    )
+    inst = MathCompiler().compile(spec)
+    # 故意缺访（3-3 未访 W1）→ C1 义务 + C2 走廊下限违例
+    bad_solution = {Dt(2026, 3, 2): ("W1",)}
+    report = MathValidator().validate(inst, bad_solution)
+    assert not report.ok
+    assert {"C1_OBLIGATION", "C2_CORRIDOR_MIN"} <= {v.constraint_id for v in report.violations}
+
+    findings = violations_to_findings(report, subject="G8")
+    assert len(findings) == len(report.violations)
+    wb = env["wb"]
+    ids = wb.ingest(findings)
+    issue = wb.open_issue(ids, title="验解违例 G8")
+    assert issue.status is IssueStatus.OPEN

@@ -8,7 +8,7 @@ topprism:
   evidence:
     type: automated-test-suite
     scope: >
-      CI 3.11+3.12; 7 门禁全绿（七仓 tag 矩阵：visit-ir/visitmodel/opticore/
+      CI 3.11+3.12; 8 门禁全绿（七仓 tag 矩阵：visit-ir/visitmodel/opticore/
       plan-release/service-rules/dq-workbench）——visit-plan 六态链/形状
-      fail-fast/超载桥入工作台(F2 发布闸强制)/规则绑定存在性/D2 贯通/池→审批链端到端(汰换恒需批准)/What-if 分叉对比不污染激活版。
+      fail-fast/超载桥入工作台(F2 发布闸强制)/规则绑定存在性/D2 贯通/池→审批链端到端(汰换恒需批准)/What-if 分叉对比不污染激活版/三层链验解违例进工作台。
   customer_data_in_repo: false
