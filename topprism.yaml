@@ -1,0 +1,14 @@
+topprism:
+  purpose:
+    - visit-route-planning
+  capability: module3-integration-e2e
+  platform_layer: governance
+  # maturity 枚举(组织级四档): specification-frozen | experiment-validated | applied-component | certified-component
+  maturity: experiment-validated
+  evidence:
+    type: automated-test-suite
+    scope: >
+      CI 3.11+3.12; 5 门禁全绿（七仓 tag 矩阵：visit-ir/visitmodel/opticore/
+      plan-release/service-rules/dq-workbench）——visit-plan 六态链/形状
+      fail-fast/超载桥入工作台(F2 发布闸强制)/规则绑定存在性/D2 贯通。
+  customer_data_in_repo: false
