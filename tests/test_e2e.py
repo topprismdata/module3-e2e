@@ -92,3 +92,45 @@ def test_g5_三层import链与D2贯通(env):
     assert_horizon_safe([date(2026, 12, 21)], ISO_WEEK_V1)  # 不跨界放行
     with pytest.raises(AnchorBoundaryError):
         assert_horizon_safe([date(2026, 12, 28), date(2027, 1, 4)], ISO_WEEK_V1)
+
+
+def test_g6_池确认进审批链端到端(env):
+    """WP23 #16-21 全链：spec→池→候选(恒需批准)→确认→六态发布。"""
+    from visitmodel.pool import (
+        admit_candidates,
+        confirm_pool,
+        removal_candidates,
+        weekday_pools,
+    )
+
+    metrics = {"C001": 95.0, "C002": 60.0, "C003": 3.0}
+    pools = weekday_pools([["C001", 0], ["C002", 0], ["C003", 1]])
+    assert pools == {0: ("C001", "C002"), 1: ("C003",)}
+    assert [c.code for c in admit_candidates(metrics, threshold=90.0)] == ["C001"]
+    removals = removal_candidates(metrics, threshold=5.0)
+    assert [c.code for c in removals] == ["C003"]
+    assert all(c.requires_approval for c in removals)  # 汰换永不自动执行
+
+    # 绑定闸：先关后开
+    payload = confirm_pool(pools, rule_set_ref="rs-e2e-1",
+                           capacity={"reps": 2}, confirmed_by="ops-张三")
+    store = env["rules"]
+    assert not rule_ref_published(store, "rs-e2e-1")
+    store.publish(
+        RuleSetVersion("rs-e2e-1", (
+            Rule("R1", RuleType.VISIT_FREQUENCY, Severity.C2, False, visits_per_week=2),
+            Rule("R2", RuleType.CADENCE_SLOTS, Severity.C1, True,
+                 weekday_slots={0: [0, 1], 1: [0]}),
+        )),
+        activated_by="ops",
+    )
+    assert rule_ref_published(store, "rs-e2e-1")
+
+    plans = env["plans"]
+    pv = plans.new_iteration("POOL1", payload, actor="planner")
+    plans.transition(pv.ref, "simulate", actor="analyst")
+    plans.transition(pv.ref, "submit", actor="planner")
+    plans.transition(pv.ref, "approve", actor="manager")
+    act = plans.transition(pv.ref, "activate", actor="ops")
+    assert act.payload == payload  # 确认字节到激活零漂移
+    assert plans.verify_audit_chain()
